@@ -15,6 +15,8 @@ use Loner\Container\Exception\{ContainerException, NotFoundException, ResolvedEx
 interface DefinitionInterface
 {
     /**
+     * 根据给定参数列表，从指定容器中解析定义实体
+     *
      * @param ContainerInterface $container
      * @param array $arguments
      * @return mixed

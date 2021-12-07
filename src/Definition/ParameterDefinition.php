@@ -6,8 +6,6 @@ namespace Loner\Container\Definition;
 
 use Loner\Container\ContainerInterface;
 use Loner\Container\Exception\ResolvedException;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionNamedType;
@@ -224,7 +222,7 @@ class ParameterDefinition implements DefinitionInterface
             $args = [];
 
             do {
-                $args[] = $arguments[$position];
+                $args[] = &$arguments[$position];
             } while (key_exists(++$position, $arguments));
 
             return $args;

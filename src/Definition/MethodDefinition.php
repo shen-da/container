@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Loner\Container\Definition;
 
 use Loner\Container\Collector\ReflectionCollector;
-use Loner\Container\Exception\{ContainerException,
+use Loner\Container\Exception\{
+    ContainerException,
     DefinedException,
     NotFoundException,
     ReflectedException,
-    ResolvedException};
+    ResolvedException
+};
 use Loner\Container\ContainerInterface;
 use ReflectionException;
 use ReflectionMethod;
