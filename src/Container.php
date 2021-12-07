@@ -41,10 +41,9 @@ class Container implements ContainerInterface
     /**
      * @inheritDoc
      */
-    public function method(object $object, string $method): Closure
+    public function foundry(object $object): Foundry
     {
-        $definition = DefinitionCollector::getMethod($object::class, $method);
-        return fn(array &$arguments = []) => $definition->setObject($object)->resolve($this, $arguments);
+        return new Foundry($this, $object);
     }
 
     /**
@@ -102,26 +101,47 @@ class Container implements ContainerInterface
      */
     public function make(string $id, array $parameters = []): mixed
     {
-        $definition = $this->getDefinition($id);
-
         $this->resolveStack[] = $id;
 
-        if ($definition === false) {
-            throw new NotFoundException($this->getResolving());
+        if (false === $definition = $this->getDefinition($id)) {
+            throw  NotFoundException::create($this);
         }
 
         try {
             $entry = $definition->resolve($this, $parameters);
         } catch (ResolvedException $e) {
-            throw new ContainerException(sprintf(
-                'Resolving exception: %s%s%s',
-                $this->getResolving(), PHP_EOL, $e->getMessage()
-            ));
+            throw ContainerException::create($this, $e);
         }
 
         array_pop($this->resolveStack);
 
         return $entry;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function resolvesPush(string $id): void
+    {
+        $this->resolveStack[] = $id;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function resolvesPop(string $id): void
+    {
+        if ($id !== $resolve = array_pop($this->resolveStack)) {
+            array_push($this->resolveStack, $resolve);
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getResolving(string $separator = '.'): string
+    {
+        return join($separator, $this->resolveStack);
     }
 
     /**
@@ -177,16 +197,6 @@ class Container implements ContainerInterface
     private function hasEntry(string $id): bool
     {
         return isset($this->entries[$id]) || key_exists($id, $this->entries);
-    }
-
-    /**
-     * 获取解析定义串
-     *
-     * @return string
-     */
-    private function getResolving(): string
-    {
-        return join(' > ', $this->resolveStack);
     }
 
     /**

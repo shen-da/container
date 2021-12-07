@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Loner\Container\Exception;
 
 use Exception;
+use Loner\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
 /**
@@ -14,4 +15,14 @@ use Psr\Container\NotFoundExceptionInterface;
  */
 class NotFoundException extends Exception implements NotFoundExceptionInterface
 {
+    /**
+     * 创建异常
+     *
+     * @param ContainerInterface $container
+     * @return static
+     */
+    public static function create(ContainerInterface $container): self
+    {
+        return new self($container->getResolving());
+    }
 }

@@ -78,8 +78,8 @@ class MethodDefinition implements DefinitionInterface
      */
     public function resolve(ContainerInterface $container, array &$parameters = []): mixed
     {
-        $dependencies = $this->resolveDependencies($container, $parameters);
         $object = $this->getObject($container);
+        $dependencies = $this->resolveDependencies($container, $parameters);
 
         try {
             return $this->reflection->invokeArgs($object, $dependencies);

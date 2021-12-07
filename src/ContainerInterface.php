@@ -65,7 +65,7 @@ interface ContainerInterface extends PsrContainerInterface
     public function unset(string $id = null): void;
 
     /**
-     * 从容器解析指定标识符实体并返回（不影响标识符缓存实体）
+     * 从容器解析指定标识符实体并返回（不影响表层标识符缓存实体）
      *
      * @param string $id
      * @param array $parameters
@@ -76,14 +76,35 @@ interface ContainerInterface extends PsrContainerInterface
     public function make(string $id, array $parameters = []): mixed;
 
     /**
-     * 返回对象方法依赖解析包
+     * 压入解析记录
+     *
+     * @param string $id
+     */
+    public function resolvesPush(string $id): void;
+
+    /**
+     * 弹出解析记录
+     *
+     * @param string $id
+     */
+    public function resolvesPop(string $id): void;
+
+    /**
+     * 获取解析堆栈连缀字符串
+     *
+     * @param string $separator
+     * @return string
+     */
+    public function getResolving(string $separator = '.'): string;
+
+    /**
+     * 返回对象代理
      *
      * @param object $object
-     * @param string $method
-     * @return Closure
+     * @return Foundry
      * @throws DefinedException
      */
-    public function method(object $object, string $method): Closure;
+    public function foundry(object $object): Foundry;
 
     /**
      * 返回闭包依赖解析包
