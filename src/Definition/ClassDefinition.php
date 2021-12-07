@@ -63,7 +63,7 @@ class ClassDefinition implements DefinitionInterface
     /**
      * @inheritDoc
      */
-    public function resolve(ContainerInterface $container, array &$arguments = []): object
+    public function resolve(ContainerInterface $container, array &$parameters = []): object
     {
         $reflection = $this->reflection;
 
@@ -78,7 +78,7 @@ class ClassDefinition implements DefinitionInterface
             }
         }
 
-        $dependencies = $this->resolveDependencies($container, $arguments);
+        $dependencies = $this->resolveDependencies($container, $parameters);
 
         try {
             return $reflection->newInstanceArgs($dependencies);

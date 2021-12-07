@@ -76,9 +76,9 @@ class MethodDefinition implements DefinitionInterface
     /**
      * @inheritDoc
      */
-    public function resolve(ContainerInterface $container, array &$arguments = []): mixed
+    public function resolve(ContainerInterface $container, array &$parameters = []): mixed
     {
-        $dependencies = $this->resolveDependencies($container, $arguments);
+        $dependencies = $this->resolveDependencies($container, $parameters);
         $object = $this->getObject($container);
 
         try {

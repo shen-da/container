@@ -203,29 +203,29 @@ class ParameterDefinition implements DefinitionInterface
     /**
      * @inheritDoc
      */
-    public function resolve(ContainerInterface $container, array &$arguments = []): mixed
+    public function resolve(ContainerInterface $container, array &$parameters = []): mixed
     {
         $name = $this->name();
-        if (key_exists($name, $arguments)) {
-            return $arguments[$name];
+        if (key_exists($name, $parameters)) {
+            return $parameters[$name];
         }
 
         $position = $this->position();
-        if (key_exists($position, $arguments)) {
+        if (key_exists($position, $parameters)) {
 
             // 不是末位可变参数，直接返回
             if ($this->isVariadic() === false) {
-                return $arguments[$position];
+                return $parameters[$position];
             }
 
             // 末位可变参数，且能提供相应位置的值，则依序补值
-            $args = [];
+            $arguments = [];
 
             do {
-                $args[] = &$arguments[$position];
-            } while (key_exists(++$position, $arguments));
+                $arguments[] = &$parameters[$position];
+            } while (key_exists(++$position, $parameters));
 
-            return $args;
+            return $arguments;
         }
 
         // 若为未位可变参数，且未提供值，返回空列表

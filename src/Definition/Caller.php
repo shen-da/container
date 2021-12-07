@@ -25,18 +25,18 @@ trait Caller
      * 解析依赖
      *
      * @param ContainerInterface $container
-     * @param array $arguments
+     * @param array $parameters
      * @return array
      * @throws ResolvedException
      * @throws ContainerException
      * @throws NotFoundException
      */
-    private function resolveDependencies(ContainerInterface $container, array &$arguments): array
+    private function resolveDependencies(ContainerInterface $container, array &$parameters): array
     {
         $dependencies = [];
 
         foreach ($this->getParameterDefinitions() as $parameterDefinition) {
-            $dependencies[] = $parameterDefinition->resolve($container, $arguments);
+            $dependencies[] = $parameterDefinition->resolve($container, $parameters);
         }
 
         // 若存在最末可变参数，将其值列出

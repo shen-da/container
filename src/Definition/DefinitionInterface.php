@@ -18,11 +18,11 @@ interface DefinitionInterface
      * 根据给定参数列表，从指定容器中解析定义实体
      *
      * @param ContainerInterface $container
-     * @param array $arguments
+     * @param array $parameters
      * @return mixed
      * @throws ResolvedException
      * @throws ContainerException
      * @throws NotFoundException
      */
-    public function resolve(ContainerInterface $container, array &$arguments = []): mixed;
+    public function resolve(ContainerInterface $container, array &$parameters = []): mixed;
 }
