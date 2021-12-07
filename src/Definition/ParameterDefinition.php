@@ -6,6 +6,8 @@ namespace Loner\Container\Definition;
 
 use Loner\Container\ContainerInterface;
 use Loner\Container\Exception\ResolvedException;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionNamedType;
@@ -31,7 +33,7 @@ class ParameterDefinition implements DefinitionInterface
      *
      * @var string[]
      */
-    private array $classes;
+    private array $classnames;
 
     /**
      * 默认值
@@ -112,9 +114,11 @@ class ParameterDefinition implements DefinitionInterface
      */
     public function __construct(private ReflectionParameter $parameter, private ?string $declaring = null)
     {
-        try {
-            $this->defaultValue = $parameter->getDefaultValue();
-        } catch (ReflectionException) {
+        if ($this->isVariadic() === false) {
+            try {
+                $this->defaultValue = $parameter->getDefaultValue();
+            } catch (ReflectionException) {
+            }
         }
     }
 
@@ -159,13 +163,23 @@ class ParameterDefinition implements DefinitionInterface
     }
 
     /**
+     * 返回首个全限定类名
+     *
+     * @return string|null
+     */
+    public function classname(): ?string
+    {
+        return $this->classnames()[0] ?? null;
+    }
+
+    /**
      * 获取参数全限定类型名列表
      *
      * @return string[]
      */
-    public function classes(): array
+    public function classnames(): array
     {
-        return $this->classes ??= self::getClassnames($this->parameter);
+        return $this->classnames ??= self::getClassnames($this->parameter);
     }
 
     /**
@@ -200,7 +214,25 @@ class ParameterDefinition implements DefinitionInterface
 
         $position = $this->position();
         if (key_exists($position, $arguments)) {
-            return $arguments[$position];
+
+            // 不是末位可变参数，直接返回
+            if ($this->isVariadic() === false) {
+                return $arguments[$position];
+            }
+
+            // 末位可变参数，且能提供相应位置的值，则依序补值
+            $args = [];
+
+            do {
+                $args[] = $arguments[$position];
+            } while (key_exists(++$position, $arguments));
+
+            return $args;
+        }
+
+        // 若为未位可变参数，且未提供值，返回空列表
+        if ($this->isVariadic()) {
+            return [];
         }
 
         if (null !== $default = $this->defaultValue()) {
@@ -211,30 +243,13 @@ class ParameterDefinition implements DefinitionInterface
             return null;
         }
 
-        $classnames = $this->classes();
-
-        if (empty($classnames)) {
+        if (null === $classname = $this->classname()) {
             throw new ResolvedException(sprintf(
                 'Parameter[%s] of %s has no value provided.',
                 $name, $this->declaring()
             ));
         }
 
-        $key = '$' . $name;
-        if (key_exists($key, $arguments)) {
-            $args = &$arguments[$key];
-        }
-
-        if (empty($args) || !is_array($args)) {
-            return $container->get($classnames[0]);
-        }
-
-        foreach ($classnames as $classname) {
-            if (isset($args[$classname])) {
-                return $container->make($classname, $args[$classname]);
-            }
-        }
-
-        return $container->make($classnames[0], $args);
+        return $container->get($classname);
     }
 }

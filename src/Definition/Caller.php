@@ -39,12 +39,9 @@ trait Caller
             $dependencies[] = $parameterDefinition->resolve($container, $arguments);
         }
 
-        // 存在最末可变参数，且能提供相应位置的值，则依序补值
+        // 若存在最末可变参数，将其值列出
         if (isset($parameterDefinition) && $parameterDefinition->isVariadic()) {
-            $position = $parameterDefinition->position();
-            while (key_exists(++$position, $arguments)) {
-                $dependencies[] = $arguments[$position];
-            }
+            array_push($dependencies, ...array_pop($dependencies));
         }
 
         return $dependencies;

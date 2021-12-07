@@ -102,11 +102,26 @@ class Container implements ContainerInterface
      */
     public function make(string $id, array $parameters = []): mixed
     {
-        if (empty($parameters) && $this->hasEntry($id)) {
-            return $this->entries[$id];
+        $definition = $this->getDefinition($id);
+
+        $this->resolveStack[] = $id;
+
+        if ($definition === false) {
+            throw new NotFoundException($this->getResolving());
         }
 
-        return $this->resolve($id, $parameters);
+        try {
+            $entry = $definition->resolve($this, $parameters);
+        } catch (ResolvedException $e) {
+            throw new ContainerException(sprintf(
+                'Resolving exception: %s%s%s',
+                $this->getResolving(), PHP_EOL, $e->getMessage()
+            ));
+        }
+
+        array_pop($this->resolveStack);
+
+        return $entry;
     }
 
     /**
@@ -114,7 +129,7 @@ class Container implements ContainerInterface
      */
     public function get(string $id): mixed
     {
-        return $this->hasEntry($id) ? $this->entries[$id] : $this->entries[$id] = $this->resolve($id);
+        return $this->hasEntry($id) ? $this->entries[$id] : $this->entries[$id] = $this->make($id);
     }
 
     /**
@@ -162,39 +177,6 @@ class Container implements ContainerInterface
     private function hasEntry(string $id): bool
     {
         return isset($this->entries[$id]) || key_exists($id, $this->entries);
-    }
-
-    /**
-     * 从容器解析指定标识符实体并返回
-     *
-     * @param string $id
-     * @param array $parameters
-     * @return mixed
-     * @throws NotFoundException
-     * @throws ContainerException
-     */
-    private function resolve(string $id, array $parameters = []): mixed
-    {
-        $definition = $this->getDefinition($id);
-
-        $this->resolveStack[] = $id;
-
-        if ($definition === false) {
-            throw new NotFoundException($this->getResolving());
-        }
-
-        try {
-            $entry = $definition->resolve($this, $parameters);
-        } catch (ResolvedException $e) {
-            throw new ContainerException(sprintf(
-                'Resolving exception: %s%s%s',
-                $this->getResolving(), PHP_EOL, $e->getMessage()
-            ));
-        }
-
-        array_pop($this->resolveStack);
-
-        return $entry;
     }
 
     /**

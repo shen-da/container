@@ -16,6 +16,24 @@ use Psr\Container\ContainerInterface as PsrContainerInterface;
 interface ContainerInterface extends PsrContainerInterface
 {
     /**
+     * 从容器解析指定标识符实体并返回（共享实体）
+     *
+     * @param string $id
+     * @return mixed
+     * @throws ContainerException
+     * @throws NotFoundException
+     */
+    public function get(string $id): mixed;
+
+    /**
+     * 判断容器是否可以返回指定标识符的实体
+     *
+     * @param string $id
+     * @return bool
+     */
+    public function has(string $id): bool;
+
+    /**
      * 给指定标识符定义依赖源（会删除标识符对应的共享实体）
      *
      * @param string $id
@@ -47,7 +65,7 @@ interface ContainerInterface extends PsrContainerInterface
     public function unset(string $id = null): void;
 
     /**
-     * 从容器解析指定标识符实体并返回；若未提供参数，优先取标识符缓存实体
+     * 从容器解析指定标识符实体并返回（不影响标识符缓存实体）
      *
      * @param string $id
      * @param array $parameters

@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace Loner\Container\Definition;
 
 use Loner\Container\Collector\ReflectionCollector;
-use Loner\Container\Exception\{DefinedException, ReflectedException, ResolvedException};
+use Loner\Container\Exception\{ContainerException,
+    DefinedException,
+    NotFoundException,
+    ReflectedException,
+    ResolvedException};
 use Loner\Container\ContainerInterface;
 use ReflectionException;
 use ReflectionMethod;
@@ -104,6 +108,8 @@ class MethodDefinition implements DefinitionInterface
      *
      * @param ContainerInterface $container
      * @return object|null
+     * @throws ContainerException
+     * @throws NotFoundException
      */
     private function getObject(ContainerInterface $container): ?object
     {
