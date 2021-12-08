@@ -216,7 +216,7 @@ class Container implements ContainerInterface
     }
 
     /**
-     * 获取标识符的定义
+     * 获取标识符的定义，或者定义异常
      *
      * @param string $id
      * @return CallableDefinitionInterface|DefinedException

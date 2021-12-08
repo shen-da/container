@@ -54,7 +54,7 @@ class DefinitionCollector
     }
 
     /**
-     * 创建并返回定义，或返回异常码
+     * 创建并返回定义，或返回定义异常
      *
      * @param Closure|string $source
      * @return CallableDefinitionInterface|DefinedException
