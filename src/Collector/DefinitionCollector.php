@@ -6,7 +6,12 @@ namespace Loner\Container\Collector;
 
 use Closure;
 use Loner\Container\Exception\DefinedException;
-use Loner\Container\Definition\{ClassDefinition, FunctionDefinition, MethodDefinition};
+use Loner\Container\Definition\Callable\{
+    CallableDefinitionInterface,
+    ClassDefinition,
+    FunctionDefinition,
+    MethodDefinition
+};
 
 /**
  * 依赖定义收集器
@@ -40,26 +45,26 @@ class DefinitionCollector
      * 创建定义
      *
      * @param Closure|string $source
-     * @return ClassDefinition|FunctionDefinition|MethodDefinition
+     * @return CallableDefinitionInterface
      * @throws DefinedException
      */
-    public static function make(Closure|string $source): ClassDefinition|FunctionDefinition|MethodDefinition
+    public static function make(Closure|string $source): CallableDefinitionInterface
     {
         return $source instanceof Closure ? self::getFunction($source) : self::get($source);
     }
 
     /**
-     * 安全地创建定义
+     * 创建并返回定义，或返回异常码
      *
      * @param Closure|string $source
-     * @return ClassDefinition|FunctionDefinition|MethodDefinition|false
+     * @return CallableDefinitionInterface|DefinedException
      */
-    public static function makeSafely(Closure|string $source): ClassDefinition|FunctionDefinition|MethodDefinition|false
+    public static function makeSafely(Closure|string $source): CallableDefinitionInterface|DefinedException
     {
         try {
             return self::make($source);
-        } catch (DefinedException) {
-            return false;
+        } catch (DefinedException $e) {
+            return $e;
         }
     }
 
@@ -67,10 +72,10 @@ class DefinitionCollector
      * 获取标识符定义
      *
      * @param string $source
-     * @return ClassDefinition|FunctionDefinition|MethodDefinition
+     * @return CallableDefinitionInterface
      * @throws DefinedException
      */
-    public static function get(string $source): ClassDefinition|FunctionDefinition|MethodDefinition
+    public static function get(string $source): CallableDefinitionInterface
     {
         if (str_contains($source, '::')) {
             return self::getMethod(...explode('::', $source, 2));

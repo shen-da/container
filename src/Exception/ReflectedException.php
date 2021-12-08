@@ -14,9 +14,9 @@ use Exception;
 class ReflectedException extends Exception
 {
     /**
-     * 错误码：类不存在
+     * 错误码：不是可反射类
      */
-    public const CLASS_NOT_EXIST = 1;
+    public const NOT_REFLECTIVE_CLASS = 1;
 
     /**
      * 错误码：类方法不存在

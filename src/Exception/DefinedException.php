@@ -11,4 +11,13 @@ namespace Loner\Container\Exception;
  */
 class DefinedException extends ReflectedException
 {
+    /**
+     * 错误码：类不存在
+     */
+    public const CLASS_NOT_EXIST = 0x11;
+
+    /**
+     * 错误码：类是抽象的
+     */
+    public const CLASS_IS_ABSTRACT = 0x12;
 }

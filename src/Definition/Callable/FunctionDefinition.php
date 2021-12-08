@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Loner\Container\Definition;
+namespace Loner\Container\Definition\Callable;
 
 use Closure;
 use Loner\Container\Collector\ReflectionCollector;
@@ -13,11 +13,18 @@ use ReflectionFunction;
 /**
  * 基于【函数名/闭包】的依赖定义
  *
- * @package Loner\Container\Definition
+ * @package Loner\Container\Definition\Callable
  */
-class FunctionDefinition implements DefinitionInterface
+class FunctionDefinition implements CallableDefinitionInterface
 {
     use Caller;
+
+    /**
+     * 完全定位名称
+     *
+     * @var string
+     */
+    private string $declaring;
 
     /**
      * 主反射
@@ -25,6 +32,23 @@ class FunctionDefinition implements DefinitionInterface
      * @var ReflectionFunction
      */
     private ReflectionFunction $reflection;
+
+    /**
+     * @inheritDoc
+     */
+    public function declaring(): string
+    {
+        return $this->declaring ??= $this->reflection->name;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function resolve(ContainerInterface $container, array &$parameters = []): mixed
+    {
+        $dependencies = $this->resolveDependencies($container, $parameters);
+        return $this->reflection->invokeArgs($dependencies);
+    }
 
     /**
      * 定义基础分析
@@ -42,21 +66,12 @@ class FunctionDefinition implements DefinitionInterface
     }
 
     /**
-     * 获取主反射
+     * 主调用反射
      *
      * @return ReflectionFunction
      */
-    public function caller(): ReflectionFunction
+    private function caller(): ReflectionFunction
     {
         return $this->reflection;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function resolve(ContainerInterface $container, array &$parameters = []): mixed
-    {
-        $dependencies = $this->resolveDependencies($container, $parameters);
-        return $this->reflection->invokeArgs($dependencies);
     }
 }

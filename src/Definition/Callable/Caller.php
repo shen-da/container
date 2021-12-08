@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Loner\Container\Definition;
+namespace Loner\Container\Definition\Callable;
 
 use Loner\Container\ContainerInterface;
-use Loner\Container\Exception\{ContainerException, NotFoundException, ResolvedException};
+use Loner\Container\Definition\ParameterDefinition;
 
 /**
- * 调用特征
+ * 调用者
  *
- * @package Loner\Container\Definition
+ * @package Loner\Container\Definition\Callable
  */
 trait Caller
 {
@@ -22,16 +22,9 @@ trait Caller
     private array $parameterDefinitions;
 
     /**
-     * 解析依赖
-     *
-     * @param ContainerInterface $container
-     * @param array $parameters
-     * @return array
-     * @throws ResolvedException
-     * @throws ContainerException
-     * @throws NotFoundException
+     * @inheritDoc
      */
-    private function resolveDependencies(ContainerInterface $container, array &$parameters): array
+    public function resolveDependencies(ContainerInterface $container, array &$parameters): array
     {
         $dependencies = [];
 
@@ -54,6 +47,9 @@ trait Caller
      */
     private function getParameterDefinitions(): array
     {
-        return $this->parameterDefinitions ??= array_map(fn($reflectionParameter) => new ParameterDefinition($reflectionParameter), $this->caller()->getParameters());
+        return $this->parameterDefinitions ??= array_map(
+            fn($reflectionParameter) => new ParameterDefinition($reflectionParameter, $this->declaring()),
+            $this->caller()?->getParameters() ?? []
+        );
     }
 }

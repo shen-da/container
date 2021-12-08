@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Loner\Container\Definition;
+namespace Loner\Container\Definition\Callable;
 
 use Loner\Container\Collector\ReflectionCollector;
 use Loner\Container\Exception\{
@@ -19,11 +19,18 @@ use ReflectionMethod;
 /**
  * 基于【类名+方法名】的依赖定义
  *
- * @package Loner\Container\Definition
+ * @package Loner\Container\Definition\Callable
  */
-class MethodDefinition implements DefinitionInterface
+class MethodDefinition implements CallableDefinitionInterface
 {
     use Caller;
+
+    /**
+     * 完全定位名称
+     *
+     * @var string
+     */
+    private string $declaring;
 
     /**
      * 主反射
@@ -44,33 +51,14 @@ class MethodDefinition implements DefinitionInterface
      *
      * @var object|null
      */
-    private ?object $object;
+    private ?object $object = null;
 
     /**
-     * 定义基础分析
-     *
-     * @param string $class
-     * @param string $method
-     * @throws DefinedException
+     * @inheritDoc
      */
-    public function __construct(string $class, string $method)
+    public function declaring(): string
     {
-        try {
-            $this->reflection = ReflectionCollector::getMethod($class, $method);
-            $this->isStatic = $this->reflection->isStatic();
-        } catch (ReflectedException $e) {
-            throw new DefinedException($e->getMessage(), $e->getCode());
-        }
-    }
-
-    /**
-     * 获取主调用反射
-     *
-     * @return ReflectionMethod
-     */
-    public function caller(): ReflectionMethod
-    {
-        return $this->reflection;
+        return $this->declaring ??= $this->reflection->class . '::' . $this->reflection->name;
     }
 
     /**
@@ -84,10 +72,23 @@ class MethodDefinition implements DefinitionInterface
         try {
             return $this->reflection->invokeArgs($object, $dependencies);
         } catch (ReflectionException) {
-            throw new ResolvedException(sprintf(
-                'Method[%s::%s] invocation failed.',
-                $this->reflection->class, $this->reflection->name
-            ));
+            throw new ResolvedException($this->declaring(), ResolvedException::METHOD_INVOCATION_FAILED);
+        }
+    }
+
+    /**
+     * 定义基础分析
+     *
+     * @param string $class
+     * @param string $method
+     * @throws DefinedException
+     */
+    public function __construct(string $class, string $method)
+    {
+        try {
+            $this->reflection = ReflectionCollector::getMethod($class, $method);
+        } catch (ReflectedException $e) {
+            throw new DefinedException($e->getMessage(), $e->getCode());
         }
     }
 
@@ -99,7 +100,7 @@ class MethodDefinition implements DefinitionInterface
      */
     public function setObject(object $object): self
     {
-        if (!$this->isStatic) {
+        if (!$this->isStatic()) {
             $this->object = $object;
         }
         return $this;
@@ -115,7 +116,7 @@ class MethodDefinition implements DefinitionInterface
      */
     private function getObject(ContainerInterface $container): ?object
     {
-        if ($this->isStatic) {
+        if ($this->isStatic()) {
             return null;
         }
 
@@ -127,5 +128,25 @@ class MethodDefinition implements DefinitionInterface
         }
 
         return $object;
+    }
+
+    /**
+     * 返回是否静态函数
+     *
+     * @return bool
+     */
+    private function isStatic(): bool
+    {
+        return $this->isStatic ??= $this->reflection->isStatic();
+    }
+
+    /**
+     * 主调用反射
+     *
+     * @return ReflectionMethod
+     */
+    private function caller(): ReflectionMethod
+    {
+        return $this->reflection;
     }
 }

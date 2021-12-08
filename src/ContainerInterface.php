@@ -37,17 +37,25 @@ interface ContainerInterface extends PsrContainerInterface
      * 给指定标识符定义依赖源（会删除标识符对应的共享实体）
      *
      * @param string $id
-     * @param callable|string $source
+     * @param Closure|string $source
      * @throws DefinedException
      */
-    public function define(string $id, callable|string $source): void;
+    public function define(string $id, Closure|string $source): void;
 
     /**
-     * 移除依赖定义：全部或指定标识符
+     * 批量定义标识符的依赖源
      *
-     * @param string|null $id
+     * @param array $sources
+     * @throws DefinedException
      */
-    public function removeDefinition(string $id = null): void;
+    public function defineBatch(array $sources = []): void;
+
+    /**
+     * 移除指定标识符对应的定义，无参则移除全部
+     *
+     * @param string ...$ids
+     */
+    public function removeDefinition(string ...$ids): void;
 
     /**
      * 更新标识符共享实体
@@ -76,42 +84,58 @@ interface ContainerInterface extends PsrContainerInterface
     public function make(string $id, array $parameters = []): mixed;
 
     /**
-     * 压入解析记录
-     *
-     * @param string $id
-     */
-    public function resolvesPush(string $id): void;
-
-    /**
-     * 弹出解析记录
-     *
-     * @param string $id
-     */
-    public function resolvesPop(string $id): void;
-
-    /**
      * 获取解析堆栈连缀字符串
      *
      * @param string $separator
      * @return string
      */
-    public function getResolving(string $separator = '.'): string;
+    public function getResolving(string $separator = '->'): string;
 
     /**
      * 返回对象代理
      *
      * @param object $object
      * @return Foundry
-     * @throws DefinedException
      */
     public function foundry(object $object): Foundry;
+
+    /**
+     * 返回对象方法依赖解析包
+     *
+     * @param object $object
+     * @param string $method
+     * @return Closure
+     */
+    public function method(object $object, string $method): Closure;
 
     /**
      * 返回闭包依赖解析包
      *
      * @param Closure $closure
      * @return Closure
-     * @throws DefinedException
      */
     public function closure(Closure $closure): Closure;
+
+    /**
+     * 从容器中解析对象方法
+     *
+     * @param object $object
+     * @param string $method
+     * @param array $parameters
+     * @return mixed
+     * @throws ContainerException
+     * @throws NotFoundException
+     */
+    public function resolveMethod(object $object, string $method, array &$parameters): mixed;
+
+    /**
+     * 从容器中解析闭包
+     *
+     * @param Closure $closure
+     * @param array $parameters
+     * @return mixed
+     * @throws ContainerException
+     * @throws NotFoundException
+     */
+    public function revolveClosure(Closure $closure, array &$parameters): mixed;
 }

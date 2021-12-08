@@ -41,6 +41,69 @@ class ParameterDefinition implements DefinitionInterface
     private mixed $defaultValue = null;
 
     /**
+     * 完全定位名称
+     *
+     * @var string
+     */
+    private string $declaring;
+
+    /**
+     * @inheritDoc
+     */
+    public function declaring(): string
+    {
+        return $this->declaring ??= $this->parameter->name . ' of ' . $this->callerDeclaring();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function resolve(ContainerInterface $container, array &$parameters = []): mixed
+    {
+        $name = $this->name();
+        if (key_exists($name, $parameters)) {
+            return $parameters[$name];
+        }
+
+        $position = $this->position();
+        if (key_exists($position, $parameters)) {
+
+            // 不是末位可变参数，直接返回
+            if ($this->isVariadic() === false) {
+                return $parameters[$position];
+            }
+
+            // 末位可变参数，且能提供相应位置的值，则依序补值
+            $arguments = [];
+
+            do {
+                $arguments[] = &$parameters[$position];
+            } while (key_exists(++$position, $parameters));
+
+            return $arguments;
+        }
+
+        // 若为未位可变参数，且未提供值，返回空列表
+        if ($this->isVariadic()) {
+            return [];
+        }
+
+        if (null !== $default = $this->defaultValue()) {
+            return $default;
+        }
+
+        if ($this->allowsNull()) {
+            return null;
+        }
+
+        if (null === $classname = $this->classname()) {
+            throw new ResolvedException($this->declaring(), ResolvedException::PARAMETER_VALUE_NOT_PROVIDED);
+        }
+
+        return $container->get($classname);
+    }
+
+    /**
      * 获取全部全限定类型名
      *
      * @param ReflectionParameter $parameter
@@ -93,24 +156,24 @@ class ParameterDefinition implements DefinitionInterface
     }
 
     /**
-     * 异常信息前缀
+     * 获取声明函数/方法名称
      *
      * @param ReflectionParameter $parameter
      * @return string
      */
-    private static function getDeclaring(ReflectionParameter $parameter): string
+    private static function getCallerDeclaring(ReflectionParameter $parameter): string
     {
         $caller = $parameter->getDeclaringFunction();
-        return property_exists($caller, 'class') ? "{$caller->class}::{$caller->name}" : $caller->name;
+        return property_exists($caller, 'class') ? $caller->class . '::' . $caller->name : $caller->name;
     }
 
     /**
      * 初始化参数信息
      *
      * @param ReflectionParameter $parameter
-     * @param string|null $declaring
+     * @param string|null $callerDeclaring
      */
-    public function __construct(private ReflectionParameter $parameter, private ?string $declaring = null)
+    public function __construct(private ReflectionParameter $parameter, private ?string $callerDeclaring = null)
     {
         if ($this->isVariadic() === false) {
             try {
@@ -118,36 +181,6 @@ class ParameterDefinition implements DefinitionInterface
             } catch (ReflectionException) {
             }
         }
-    }
-
-    /**
-     * 返回参数名称
-     *
-     * @return string
-     */
-    public function name(): string
-    {
-        return $this->dataset[__FUNCTION__] ??= $this->parameter->name;
-    }
-
-    /**
-     * 返回参数位置
-     *
-     * @return int
-     */
-    public function position(): int
-    {
-        return $this->dataset[__FUNCTION__] ??= $this->parameter->getPosition();
-    }
-
-    /**
-     * 返回参数是否可以为空
-     *
-     * @return bool
-     */
-    public function allowsNull(): bool
-    {
-        return $this->dataset[__FUNCTION__] ??= $this->parameter->allowsNull();
     }
 
     /**
@@ -161,11 +194,41 @@ class ParameterDefinition implements DefinitionInterface
     }
 
     /**
+     * 返回参数名称
+     *
+     * @return string
+     */
+    private function name(): string
+    {
+        return $this->dataset[__FUNCTION__] ??= $this->parameter->name;
+    }
+
+    /**
+     * 返回参数位置
+     *
+     * @return int
+     */
+    private function position(): int
+    {
+        return $this->dataset[__FUNCTION__] ??= $this->parameter->getPosition();
+    }
+
+    /**
+     * 返回参数是否可以为空
+     *
+     * @return bool
+     */
+    private function allowsNull(): bool
+    {
+        return $this->dataset[__FUNCTION__] ??= $this->parameter->allowsNull();
+    }
+
+    /**
      * 返回首个全限定类名
      *
      * @return string|null
      */
-    public function classname(): ?string
+    private function classname(): ?string
     {
         return $this->classnames()[0] ?? null;
     }
@@ -175,7 +238,7 @@ class ParameterDefinition implements DefinitionInterface
      *
      * @return string[]
      */
-    public function classnames(): array
+    private function classnames(): array
     {
         return $this->classnames ??= self::getClassnames($this->parameter);
     }
@@ -185,69 +248,18 @@ class ParameterDefinition implements DefinitionInterface
      *
      * @return mixed
      */
-    public function defaultValue(): mixed
+    private function defaultValue(): mixed
     {
         return $this->defaultValue;
     }
 
     /**
-     * 返回调用域名称
+     * 获取声明函数/方法名称
      *
      * @return string
      */
-    public function declaring(): string
+    private function callerDeclaring(): string
     {
-        return $this->declaring ??= self::getDeclaring($this->parameter);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function resolve(ContainerInterface $container, array &$parameters = []): mixed
-    {
-        $name = $this->name();
-        if (key_exists($name, $parameters)) {
-            return $parameters[$name];
-        }
-
-        $position = $this->position();
-        if (key_exists($position, $parameters)) {
-
-            // 不是末位可变参数，直接返回
-            if ($this->isVariadic() === false) {
-                return $parameters[$position];
-            }
-
-            // 末位可变参数，且能提供相应位置的值，则依序补值
-            $arguments = [];
-
-            do {
-                $arguments[] = &$parameters[$position];
-            } while (key_exists(++$position, $parameters));
-
-            return $arguments;
-        }
-
-        // 若为未位可变参数，且未提供值，返回空列表
-        if ($this->isVariadic()) {
-            return [];
-        }
-
-        if (null !== $default = $this->defaultValue()) {
-            return $default;
-        }
-
-        if ($this->allowsNull()) {
-            return null;
-        }
-
-        if (null === $classname = $this->classname()) {
-            throw new ResolvedException(sprintf(
-                'Parameter[%s] of %s has no value provided.',
-                $name, $this->declaring()
-            ));
-        }
-
-        return $container->get($classname);
+        return $this->callerDeclaring ??= self::getCallerDeclaring($this->parameter);
     }
 }

@@ -6,7 +6,7 @@ namespace Loner\Container;
 
 use Closure;
 use Loner\Container\Collector\DefinitionCollector;
-use Loner\Container\Definition\{ClassDefinition, FunctionDefinition, MethodDefinition};
+use Loner\Container\Definition\Callable\CallableDefinitionInterface;
 use Loner\Container\Exception\{ContainerException, DefinedException, NotFoundException, ResolvedException};
 use TypeError;
 
@@ -27,14 +27,14 @@ class Container implements ContainerInterface
     /**
      * 定义库
      *
-     * @var array
+     * @var <CallableDefinitionInterface|DefinedException>[]
      */
     private array $definitions = [];
 
     /**
      * 解析实体标识符堆栈
      *
-     * @var array
+     * @var string[]
      */
     private array $resolveStack = [];
 
@@ -49,16 +49,51 @@ class Container implements ContainerInterface
     /**
      * @inheritDoc
      */
-    public function closure(Closure $closure): Closure
+    public function method(object $object, string $method): Closure
     {
-        $definition = DefinitionCollector::getFunction($closure);
-        return fn(array &$arguments = []) => $definition->resolve($this, $arguments);
+        return fn(array $parameters = []) => $this->resolveMethod($object, $method, $parameters);
     }
 
     /**
      * @inheritDoc
      */
-    public function define(string $id, callable|string $source): void
+    public function closure(Closure $closure): Closure
+    {
+        return fn(array &$parameters = []) => $this->revolveClosure($closure, $parameters);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function resolveMethod(object $object, string $method, array &$parameters): mixed
+    {
+        try {
+            return DefinitionCollector::getMethod($object::class, $method)->setObject($object)->resolve($this, $parameters);
+        } catch (DefinedException $e) {
+            throw NotFoundException::create($this, $e);
+        } catch (ResolvedException $e) {
+            throw ContainerException::create($this, $e);
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function revolveClosure(Closure $closure, array &$parameters): mixed
+    {
+        try {
+            return DefinitionCollector::getFunction($closure)->resolve($this, $parameters);
+        } catch (DefinedException $e) {
+            throw NotFoundException::create($this, $e);
+        } catch (ResolvedException $e) {
+            throw ContainerException::create($this, $e);
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function define(string $id, Closure|string $source): void
     {
         $this->definitions[$id] = DefinitionCollector::make($source);
         unset($this->entries[$id]);
@@ -67,12 +102,28 @@ class Container implements ContainerInterface
     /**
      * @inheritDoc
      */
-    public function removeDefinition(string $id = null): void
+    public function defineBatch(array $sources = []): void
     {
-        if ($id === null) {
+        foreach ($sources as $id => $source) {
+            try {
+                $this->define($id, $source);
+            } catch (TypeError) {
+                throw new DefinedException(sprintf('Invalid definition source type for identifier[%s]. Definition source must be a string or closure.', $id));
+            }
+        }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function removeDefinition(string ...$ids): void
+    {
+        if (empty($ids)) {
             $this->definitions = [];
         } else {
-            unset($this->definitions[$id]);
+            foreach ($ids as $id) {
+                unset($this->definitions[$id]);
+            }
         }
     }
 
@@ -103,12 +154,14 @@ class Container implements ContainerInterface
     {
         $this->resolveStack[] = $id;
 
-        if (false === $definition = $this->getDefinition($id)) {
-            throw  NotFoundException::create($this);
+        $definitionOrException = $this->getDefinition($id);
+
+        if ($definitionOrException instanceof DefinedException) {
+            throw NotFoundException::create($this, $definitionOrException);
         }
 
         try {
-            $entry = $definition->resolve($this, $parameters);
+            $entry = $definitionOrException->resolve($this, $parameters);
         } catch (ResolvedException $e) {
             throw ContainerException::create($this, $e);
         }
@@ -121,25 +174,7 @@ class Container implements ContainerInterface
     /**
      * @inheritDoc
      */
-    public function resolvesPush(string $id): void
-    {
-        $this->resolveStack[] = $id;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function resolvesPop(string $id): void
-    {
-        if ($id !== $resolve = array_pop($this->resolveStack)) {
-            array_push($this->resolveStack, $resolve);
-        }
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getResolving(string $separator = '.'): string
+    public function getResolving(string $separator = '->'): string
     {
         return join($separator, $this->resolveStack);
     }
@@ -157,35 +192,16 @@ class Container implements ContainerInterface
      */
     public function has(string $id): bool
     {
-        return $this->hasEntry($id) || !empty($this->definitions[$id]) || $this->getDefinition($id);
+        return $this->hasEntry($id) || !empty($this->definitions[$id]) || $this->getDefinition($id) instanceof CallableDefinitionInterface;
     }
 
     /**
      * 共享容器自身，初始化定义
-     *
-     * @param array $sources
      */
-    public function __construct(array $sources = [])
+    public function __construct()
     {
-        $this->set(ContainerInterface::class, $this);
         $this->set(self::class, $this);
-
-        $this->defineBatchSafely($sources);
-    }
-
-    /**
-     * 初始化定义库
-     *
-     * @param array $sources
-     */
-    private function defineBatchSafely(array $sources = []): void
-    {
-        foreach ($sources as $id => $source) {
-            try {
-                $this->define($id, $source);
-            } catch (DefinedException | TypeError) {
-            }
-        }
+        $this->set(ContainerInterface::class, $this);
     }
 
     /**
@@ -203,9 +219,9 @@ class Container implements ContainerInterface
      * 获取标识符的定义
      *
      * @param string $id
-     * @return ClassDefinition|FunctionDefinition|MethodDefinition|false
+     * @return CallableDefinitionInterface|DefinedException
      */
-    private function getDefinition(string $id): ClassDefinition|FunctionDefinition|MethodDefinition|false
+    private function getDefinition(string $id): CallableDefinitionInterface|DefinedException
     {
         return $this->definitions[$id] ??= DefinitionCollector::makeSafely($id);
     }

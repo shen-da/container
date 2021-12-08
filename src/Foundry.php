@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Loner\Container;
 
-use Loner\Container\Collector\DefinitionCollector;
-use Loner\Container\Exception\{ContainerException, DefinedException, NotFoundException, ResolvedException};
+use Loner\Container\Exception\{ContainerException, NotFoundException};
 
 /**
  * 代工厂
@@ -25,35 +24,16 @@ class Foundry
     }
 
     /**
-     * 代理对象方法
+     * 代理对象调用方法，解决依赖
      *
      * @param string $name
-     * @param array $arguments
+     * @param array $parameters
      * @return mixed
      * @throws ContainerException
      * @throws NotFoundException
      */
-    public function __call(string $name, array $arguments): mixed
+    public function __call(string $name, array $parameters): mixed
     {
-        $container = $this->container;
-        $object = $this->object;
-
-        $container->resolvesPush($object::class . '::' . $name);
-
-        try {
-            $definition = DefinitionCollector::getMethod($object::class, $name);
-        } catch (DefinedException) {
-            throw new NotFoundException($container);
-        }
-
-        try {
-            $entry = $definition->setObject($object)->resolve($container, $arguments);
-        } catch (ResolvedException $e) {
-            throw new ContainerException($container, $e);
-        }
-
-        $container->resolvesPop($object::class . '::' . $name);
-
-        return $entry;
+        return $this->container->resolveMethod($this->object, $name, $parameters);
     }
 }

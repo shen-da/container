@@ -23,6 +23,6 @@ class ContainerException extends ResolvedException implements ContainerException
      */
     public static function create(ContainerInterface $container, ResolvedException $exception): self
     {
-        return new self($container->getResolving() . PHP_EOL . $exception->getMessage());
+        return new self($container->getResolving(), 0, $exception);
     }
 }

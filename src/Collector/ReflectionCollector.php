@@ -59,7 +59,7 @@ class ReflectionCollector
         try {
             return self::$classReflections[$class] ??= new ReflectionClass($class);
         } catch (ReflectionException) {
-            throw new ReflectedException($class, ReflectedException::CLASS_NOT_EXIST);
+            throw new ReflectedException($class, ReflectedException::NOT_REFLECTIVE_CLASS);
         }
     }
 
