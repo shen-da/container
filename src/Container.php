@@ -192,13 +192,7 @@ class Container implements ContainerInterface
      */
     public function has(string $id): bool
     {
-        if ($this->hasEntry($id)) {
-            return true;
-        }
-
-        $definition = $this->definitions[$id] ??= $this->getDefinition($id);
-
-        return $definition instanceof CallableDefinitionInterface;
+        return $this->hasEntry($id) || $this->getDefinition($id) instanceof CallableDefinitionInterface;
     }
 
     /**
