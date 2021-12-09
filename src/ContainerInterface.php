@@ -126,7 +126,7 @@ interface ContainerInterface extends PsrContainerInterface
      * @throws ContainerException
      * @throws NotFoundException
      */
-    public function resolveMethod(object $object, string $method, array &$parameters): mixed;
+    public function resolveMethod(object $object, string $method, array &$parameters = []): mixed;
 
     /**
      * 从容器中解析闭包
@@ -137,5 +137,5 @@ interface ContainerInterface extends PsrContainerInterface
      * @throws ContainerException
      * @throws NotFoundException
      */
-    public function revolveClosure(Closure $closure, array &$parameters): mixed;
+    public function revolveClosure(Closure $closure, array &$parameters = []): mixed;
 }

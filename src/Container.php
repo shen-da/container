@@ -65,7 +65,7 @@ class Container implements ContainerInterface
     /**
      * @inheritDoc
      */
-    public function resolveMethod(object $object, string $method, array &$parameters): mixed
+    public function resolveMethod(object $object, string $method, array &$parameters = []): mixed
     {
         try {
             return DefinitionCollector::getMethod($object::class, $method)->setObject($object)->resolve($this, $parameters);
@@ -79,7 +79,7 @@ class Container implements ContainerInterface
     /**
      * @inheritDoc
      */
-    public function revolveClosure(Closure $closure, array &$parameters): mixed
+    public function revolveClosure(Closure $closure, array &$parameters = []): mixed
     {
         try {
             return DefinitionCollector::getFunction($closure)->resolve($this, $parameters);
