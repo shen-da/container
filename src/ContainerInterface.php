@@ -92,14 +92,6 @@ interface ContainerInterface extends PsrContainerInterface
     public function getResolving(string $separator = '->'): string;
 
     /**
-     * 返回对象代理
-     *
-     * @param object $object
-     * @return Foundry
-     */
-    public function foundry(object $object): Foundry;
-
-    /**
      * 返回对象方法依赖解析包
      *
      * @param object $object

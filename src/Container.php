@@ -41,14 +41,6 @@ class Container implements ContainerInterface
     /**
      * @inheritDoc
      */
-    public function foundry(object $object): Foundry
-    {
-        return new Foundry($this, $object);
-    }
-
-    /**
-     * @inheritDoc
-     */
     public function method(object $object, string $method): Closure
     {
         return fn(array $parameters = []) => $this->resolveMethod($object, $method, $parameters);
@@ -154,14 +146,14 @@ class Container implements ContainerInterface
     {
         $this->resolveStack[] = $id;
 
-        $definitionOrException = $this->getDefinition($id);
+        $definition = $this->getDefinition($id);
 
-        if ($definitionOrException instanceof DefinedException) {
-            throw NotFoundException::create($this, $definitionOrException);
+        if ($definition instanceof DefinedException) {
+            throw NotFoundException::create($this, $definition);
         }
 
         try {
-            $entry = $definitionOrException->resolve($this, $parameters);
+            $entry = $definition->resolve($this, $parameters);
         } catch (ResolvedException $e) {
             throw ContainerException::create($this, $e);
         }
