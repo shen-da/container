@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Loner\Container\Definition\Callable;
 
+use Loner\Container\Attribute\Inject;
 use Loner\Container\Collector\ReflectionCollector;
 use Loner\Container\ContainerInterface;
 use Loner\Container\Exception\{DefinedException, ReflectedException, ResolvedException};
+use Loner\Container\Definition\PropertyDefinition;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
@@ -65,10 +67,25 @@ class ClassDefinition implements CallableDefinitionInterface
         $dependencies = $this->resolveDependencies($container, $parameters);
 
         try {
-            return $this->reflection->newInstanceArgs($dependencies);
+            $object = $this->reflection->newInstanceArgs($dependencies);
         } catch (ReflectionException) {
             throw new ResolvedException($this->declaring(), ResolvedException::CONSTRUCTOR_NOT_PUBLIC);
         }
+
+        // 属性注入实体
+        foreach ($this->getPropertyDefinitions() as $propertyDefinition) {
+            $value = $propertyDefinition->resolve($container, $parameters);
+            $property = $propertyDefinition->valuer();
+            if ($property->isPublic()) {
+                $property->setValue($object, $value);
+            } else {
+                $property->setAccessible(true);
+                $property->setValue($object, $value);
+                $property->setAccessible(false);
+            }
+        }
+
+        return $object;
     }
 
     /**
@@ -104,5 +121,21 @@ class ClassDefinition implements CallableDefinitionInterface
     private function caller(): ?ReflectionMethod
     {
         return $this->constructor;
+    }
+
+    /**
+     * 获取属性定义列表
+     *
+     * @return PropertyDefinition[]
+     */
+    private function getPropertyDefinitions(): array
+    {
+        return $this->propertyDefinitions ??= array_map(
+            fn($reflectionProperty) => new PropertyDefinition($reflectionProperty),
+            array_filter(
+                $this->reflection->getProperties(),
+                fn($reflectionProperty) => (bool)$reflectionProperty->getAttributes(Inject::class)
+            )
+        );
     }
 }

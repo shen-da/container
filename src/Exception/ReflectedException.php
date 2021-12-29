@@ -11,7 +11,7 @@ use Exception;
  *
  * @package Loner\Container\Exception
  */
-class ReflectedException extends Exception
+class ReflectedException extends Exception implements ExceptionInterface
 {
     /**
      * 错误码：不是可反射类

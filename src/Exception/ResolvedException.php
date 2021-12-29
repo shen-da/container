@@ -11,7 +11,7 @@ use Exception;
  *
  * @package Loner\Container\Exception
  */
-class ResolvedException extends Exception
+class ResolvedException extends Exception implements ExceptionInterface
 {
     /**
      * 错误码：参数值未提供

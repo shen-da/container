@@ -6,11 +6,8 @@ namespace Loner\Container\Definition;
 
 use Loner\Container\ContainerInterface;
 use Loner\Container\Exception\ResolvedException;
-use ReflectionClass;
 use ReflectionException;
-use ReflectionNamedType;
 use ReflectionParameter;
-use ReflectionUnionType;
 
 /**
  * 基于【参数反射】的依赖定义
@@ -19,19 +16,14 @@ use ReflectionUnionType;
  */
 class ParameterDefinition implements DefinitionInterface
 {
+    use Valuer;
+
     /**
      * 数据集
      *
      * @var array
      */
     private array $dataset = [];
-
-    /**
-     * 全限定类型名列表
-     *
-     * @var string[]
-     */
-    private array $classnames;
 
     /**
      * 默认值
@@ -104,58 +96,6 @@ class ParameterDefinition implements DefinitionInterface
     }
 
     /**
-     * 获取全部全限定类型名
-     *
-     * @param ReflectionParameter $parameter
-     * @return string[]
-     */
-    private static function getClassnames(ReflectionParameter $parameter): array
-    {
-        if (null === $type = $parameter->getType()) {
-            return [];
-        }
-
-        $class = $parameter->getDeclaringClass();
-
-        if ($type instanceof ReflectionNamedType) {
-            return (array)self::getClassname($type, $class);
-        }
-
-        return $type instanceof ReflectionUnionType ? array_reduce($type->getTypes(), function ($classnames, $type) use ($class) {
-            if (null !== $classname = self::getClassname($type, $class)) {
-                $classnames[] = $classname;
-            }
-            return $classnames;
-        }, []) : [];
-    }
-
-    /**
-     * 从类型名反射中获取类名，无则返回 null
-     *
-     * @param ReflectionNamedType $type
-     * @param ReflectionClass|null $class
-     * @return string|null
-     */
-    private static function getClassname(ReflectionNamedType $type, ?ReflectionClass $class): ?string
-    {
-        if ($type->isBuiltin()) {
-            return null;
-        }
-
-        $name = $type->getName();
-
-        if ($class !== null) {
-            if ($name === 'self') {
-                $name = $class->getName();
-            } elseif ($name === 'parent' && null !== $class = $class->getParentClass()) {
-                $name = $class->getName();
-            }
-        }
-
-        return $name;
-    }
-
-    /**
      * 获取声明函数/方法名称
      *
      * @param ReflectionParameter $parameter
@@ -224,26 +164,6 @@ class ParameterDefinition implements DefinitionInterface
     }
 
     /**
-     * 返回首个全限定类名
-     *
-     * @return string|null
-     */
-    private function classname(): ?string
-    {
-        return $this->classnames()[0] ?? null;
-    }
-
-    /**
-     * 获取参数全限定类型名列表
-     *
-     * @return string[]
-     */
-    private function classnames(): array
-    {
-        return $this->classnames ??= self::getClassnames($this->parameter);
-    }
-
-    /**
      * 返回参数默认值
      *
      * @return mixed
@@ -261,5 +181,15 @@ class ParameterDefinition implements DefinitionInterface
     private function callerDeclaring(): string
     {
         return $this->callerDeclaring ??= self::getCallerDeclaring($this->parameter);
+    }
+
+    /**
+     * 获取主数据反射
+     *
+     * @return ReflectionParameter
+     */
+    private function valuer(): ReflectionParameter
+    {
+        return $this->parameter;
     }
 }
