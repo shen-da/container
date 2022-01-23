@@ -24,7 +24,7 @@ trait Caller
     /**
      * @inheritDoc
      */
-    public function resolveDependencies(ContainerInterface $container, array &$parameters): array
+    public function resolveDependencies(ContainerInterface $container, array &$parameters = []): array
     {
         $dependencies = [];
 

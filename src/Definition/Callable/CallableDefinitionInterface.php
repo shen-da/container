@@ -25,5 +25,5 @@ interface CallableDefinitionInterface extends DefinitionInterface
      * @throws ContainerException
      * @throws NotFoundException
      */
-    public function resolveDependencies(ContainerInterface $container, array &$parameters): array;
+    public function resolveDependencies(ContainerInterface $container, array &$parameters = []): array;
 }
